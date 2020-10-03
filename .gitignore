@@ -3,4 +3,6 @@
 .python-version
 __pycache__/
 *.py[co]
+.vs
+.handler-saves
 read.me
