@@ -50,17 +50,18 @@ def add_location(message):
 def process_placename_step(message):
     try:
         user_id = message.from_user.id
+        print(user_id)
         place = Place(user_id)
         data_place[user_id] = place
         place.name = message.text
 
         query = ("SELECT user_id FROM user "
-         "WHERE user_id LIKE %s")
+         "WHERE user_id LIKE %s ")
         value = (place.user_id,)
         mycursor.execute(query, value)
-        for user in mycursor:
-            pass
-        if user[0] != place.user_id:
+        user = mycursor.fetchone()
+        print(type(user))
+        if not user:
             sql = ("INSERT INTO ""user (user_id) ""VALUES (%s) ")                   
             val = (place.user_id,)
             mycursor.execute(sql, val)                                           
@@ -140,7 +141,8 @@ def place_list(message):
         else:
             for (name, lon, lat) in results:
                 print(name, lon, lat)
-                bot.send_message(message.chat.id, '{}\n{}, {}.'.format(name, lon, lat))
+                bot.send_message(message.chat.id, '{}'.format(name))
+                bot.send_location(message.chat.id, lat, lon)
 
             bot.send_message(message.chat.id, 'Done!')
 
