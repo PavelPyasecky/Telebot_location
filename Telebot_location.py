@@ -1,6 +1,7 @@
 import telebot
 import mysql.connector
 import json
+import base64
 
 from mysql.connector import errorcode
 
@@ -12,26 +13,18 @@ try:
       port="3306",
       database="telebot"
       )
-  print('Db has been connected!')    ####
+
 except mysql.connector.Error as err:
     if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
         print("Something is wrong with your user name or password")
     elif err.errno == errorcode.ER_BAD_DB_ERROR:
         print("Database does not exist")
     else:
-        print('Error!')                   ####
         print(err)
 
 
 
 mycursor = mydb.cursor()
-
-#cursor.execute("CREATE DATABASE telebot")
-
-#cursor.execute("SHOW DATABASES")
-
-#for x in cursor:
-#  print(x)
 
 token = '1181480337:AAHZBCS4pt2tvAYDt_L1xxQAqssVfAjUnLQ'
 
@@ -45,13 +38,14 @@ class Place:
         self.name = ''
         self.lon = None
         self.lat = None
+        self.photo = None
 
 commands = ['/add', '/list', '/reset']
 
 @bot.message_handler(commands=['add'])
 def add_location(message):
     msg = bot.send_message(message.chat.id, "Enter place name, please.")
-    bot.register_next_step_handler(msg, process_placename_step)
+    bot.register_next_step_handler(msg, process_placename_step)  
 
 def process_placename_step(message):
     try:
@@ -74,15 +68,14 @@ def process_placename_step(message):
 
         msg = bot.send_message(message.chat.id, 'Send your location, please.')
         
-        bot.register_next_step_handler(msg, process_locationname_step)
+        bot.register_next_step_handler(msg, process_location_step)
     except Exception as e:
         bot.reply_to(message, 'oooops')
 
 
 
-def process_locationname_step(message):
+def process_location_step(message):
     try:
-        print(data_place[message.from_user.id].user_id)
         user_id = message.from_user.id
         place = data_place[user_id]
 
@@ -90,22 +83,101 @@ def process_locationname_step(message):
 
         place.lon = message.location.longitude
         place.lat = message.location.latitude
-        print(place.lon, place.lat)
 
-        sql = "INSERT INTO place (name,lon,lat,user_id) VALUES (%s,%s,%s,%s)"
-        val = (place.name, place.lon, place.lat, place.user_id)
+        #sql = "INSERT INTO place (name,lon,lat,user_id) VALUES (%s,%s,%s,%s)"
+        #val = (place.name, place.lon, place.lat, place.user_id)
+        #mycursor.execute(sql, val)
+        #mydb.commit()
+
+        msg = bot.send_message(message.chat.id, 'Send a photo of the place, please.')
+        bot.register_next_step_handler(msg, process_placephoto_step)
+        #bot.send_message(message.chat.id, 'Place has been saved!')
+    except Exception as e:
+        bot.reply_to(message, 'oooops')
+
+@bot.message_handler(content_types=['photo'])
+def process_placephoto_step(message):
+    try:
+        user_id = message.from_user.id
+        place = data_place[user_id]
+
+        photo_id = message.photo[-1].file_id
+        photo_info = bot.get_file(photo_id)
+        photo_downloaded = bot.download_file(photo_info.file_path)
+        place.photo = base64.b64encode(photo_downloaded)
+
+        sql = "INSERT INTO place (name,lon,lat,photo,user_id) VALUES (%s,%s,%s, %s ,%s) "
+        val = (place.name, place.lon, place.lat, place.photo, user_id)
         mycursor.execute(sql, val)
         mydb.commit()
 
         bot.send_message(message.chat.id, 'Place has been saved!')
     except Exception as e:
-        bot.reply_to(message, 'oooops')
+        bot.reply_to(message, 'Wrong photo!')
+
+
+@bot.message_handler(commands=['list'])
+def place_list(message):
+    try:
+        user_id = message.from_user.id
+        print('----------------------------------------------------')
+        query = ("SELECT name, lon, lat FROM place "                 
+         "WHERE user_id LIKE %s "
+         "ORDER BY place_id DESC LIMIT 10")
+        value = (user_id,)
+        mycursor.execute(query, value)
+
+        print(mycursor.rowcount, "record inserted.")
+        results = mycursor.fetchall()
+  
+
+        print(mycursor.column_names)
+        print("Result: ", results)
+
+
+        if results == []:   
+            bot.send_message(message.chat.id, 'Place_List is empty!')
+        else:
+            for (name, lon, lat) in results:
+                print(name, lon, lat)
+                bot.send_message(message.chat.id, '{}\n{}, {}.'.format(name, lon, lat))
+
+            bot.send_message(message.chat.id, 'Done!')
+
+        #query = ("SELECT photo FROM place "                 
+        # "WHERE user_id LIKE %s "
+        # "ORDER BY place_id DESC")
+        #value = (user_id,)
+        #mycursor.execute(query, value)
+
+        #results = base64.b64decode(mycursor.fetchone())
+        #bot.send_photo(message.chat.id, results[0],caption='Done!')
+        ###print(type(results[0]))
+    except Exception as e:
+        bot.reply_to(message, 'Error')
+
+
+@bot.message_handler(commands=['del'])
+def delete_placelist(message):
+    try:
+        user_id = message.from_user.id
+
+        query = ("DELETE FROM place "                 
+         "WHERE user_id LIKE %s ")
+        value = (user_id,)
+        mycursor.execute(query, value)
+        mydb.commit()
+
+        print("Deleted!")
+        bot.send_message(message.chat.id, 'Your Place_List has been deleted!')
+    except Exception as e:
+        bot.reply_to(message, 'Wrong del!')
 
 
 @bot.message_handler()
 def handler_message(message):
   print(message.text)
-  bot.send_message(message.chat.id, text='Этот Бот для сохранения мест, в которых вы хотите побывать.')
+  bot.send_message(message.chat.id, text='This BestBot will help you with your Place_List.')
    
 ##@bot.message_handler()
 ##def handler_message(message):
@@ -124,11 +196,11 @@ def handler_message(message):
 # Enable saving next step handlers to file "./.handlers-saves/step.save".
 # Delay=2 means that after any change in next step handlers (e.g. calling register_next_step_handler())
 # saving will hapen after delay 2 seconds.
-####bot.enable_save_next_step_handlers(delay=2)                                                                #Need to uncomment
+bot.enable_save_next_step_handlers(delay=2)                                                                #Need to uncomment
 
 # Load next_step_handlers from save file (default "./.handlers-saves/step.save")
 # WARNING It will work only if enable_save_next_step_handlers was called!
-####bot.load_next_step_handlers()                                                                     #Need to uncomment
+bot.load_next_step_handlers()                                                                     #Need to uncomment
 
 if __name__ == '__main__':
     bot.polling(none_stop= True)
