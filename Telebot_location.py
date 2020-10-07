@@ -31,11 +31,11 @@ def get_adress_by_coordinates(coordinates):
 
 try:
   mydb = mysql.connector.connect(
-      host="localhost",
-      user="root",
-      password="777denis",
+      host="eu-cdbr-west-03.cleardb.net",
+      user="bf74cdeb495328",
+      password="b1507432",
       port="3306",
-      database="telebot"
+      database="heroku_bf58d8bda48c78b"
       )
 
 except mysql.connector.Error as err:

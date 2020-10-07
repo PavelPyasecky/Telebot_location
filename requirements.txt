@@ -1,2 +1,4 @@
-mysql-connector-python == 8.0.19
-pyTelegramBotAPI == 3.7.3
+mysql-connector-python==8.0.19
+pyTelegramBotAPI==3.7.3
+Pillow==7.2.0
+requests==2.24.0
