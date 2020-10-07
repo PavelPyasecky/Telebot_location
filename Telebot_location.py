@@ -127,6 +127,7 @@ def process_placephoto_step(message):
         mydb.commit()
 
         bot.send_message(message.chat.id, 'Place has been saved!')
+        data_place.pop(user_id)
     except Exception as e:
         bot.reply_to(message, 'Wrong Place_photo!')
 
