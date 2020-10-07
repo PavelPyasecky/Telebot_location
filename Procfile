@@ -1,1 +1,1 @@
-web: python Telebot_location.py
+worker: python Telebot_location.py
