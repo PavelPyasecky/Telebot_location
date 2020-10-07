@@ -1,9 +1,33 @@
-import telebot
-import mysql.connector
-import json
 import base64
+import requests
+import mysql.connector
+import telebot
+import json
 
+from PIL import Image
 from mysql.connector import errorcode
+
+
+url = 'https://geocode-maps.yandex.ru/1.x/'
+
+def get_adress_by_coordinates(coordinates):
+    params = {
+    "apikey":"6c96be79-497b-42ff-b64e-4af057ffac67",
+    "format":"json",
+    "lang":"ru_RU",
+    "kind":"house",
+    "geocode": coordinates
+    }
+    try:
+
+        response = requests.get(url, params=params)
+
+        json_data = response.json()
+        address_str = json_data["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]["metaDataProperty"]["GeocoderMetaData"]["AddressDetails"]["Country"]["AddressLine"]
+    except:
+        return "Too far"
+    return address_str
+
 
 try:
   mydb = mysql.connector.connect(
@@ -22,12 +46,9 @@ except mysql.connector.Error as err:
     else:
         print(err)
 
-
-
 mycursor = mydb.cursor()
 
 token = '1181480337:AAHZBCS4pt2tvAYDt_L1xxQAqssVfAjUnLQ'
-
 bot = telebot.TeleBot(token)
 
 data_place = {}
@@ -50,7 +71,7 @@ def add_location(message):
 def process_placename_step(message):
     try:
         user_id = message.from_user.id
-        print(user_id)
+
         place = Place(user_id)
         data_place[user_id] = place
         place.name = message.text
@@ -60,7 +81,7 @@ def process_placename_step(message):
         value = (place.user_id,)
         mycursor.execute(query, value)
         user = mycursor.fetchone()
-        print(type(user))
+
         if not user:
             sql = ("INSERT INTO ""user (user_id) ""VALUES (%s) ")                   
             val = (place.user_id,)
@@ -71,8 +92,7 @@ def process_placename_step(message):
         
         bot.register_next_step_handler(msg, process_location_step)
     except Exception as e:
-        bot.reply_to(message, 'oooops')
-
+        bot.reply_to(message, 'Error in the name')
 
 
 def process_location_step(message):
@@ -80,23 +100,16 @@ def process_location_step(message):
         user_id = message.from_user.id
         place = data_place[user_id]
 
-        print(message.location)
-
         place.lon = message.location.longitude
         place.lat = message.location.latitude
 
-        #sql = "INSERT INTO place (name,lon,lat,user_id) VALUES (%s,%s,%s,%s)"
-        #val = (place.name, place.lon, place.lat, place.user_id)
-        #mycursor.execute(sql, val)
-        #mydb.commit()
-
         msg = bot.send_message(message.chat.id, 'Send a photo of the place, please.')
         bot.register_next_step_handler(msg, process_placephoto_step)
-        #bot.send_message(message.chat.id, 'Place has been saved!')
-    except Exception as e:
-        bot.reply_to(message, 'oooops')
 
-@bot.message_handler(content_types=['photo'])
+    except Exception as e:
+        bot.reply_to(message, 'Error in location')
+
+
 def process_placephoto_step(message):
     try:
         user_id = message.from_user.id
@@ -105,6 +118,7 @@ def process_placephoto_step(message):
         photo_id = message.photo[-1].file_id
         photo_info = bot.get_file(photo_id)
         photo_downloaded = bot.download_file(photo_info.file_path)
+
         place.photo = base64.b64encode(photo_downloaded)
 
         sql = "INSERT INTO place (name,lon,lat,photo,user_id) VALUES (%s,%s,%s, %s ,%s) "
@@ -114,52 +128,46 @@ def process_placephoto_step(message):
 
         bot.send_message(message.chat.id, 'Place has been saved!')
     except Exception as e:
-        bot.reply_to(message, 'Wrong photo!')
+        bot.reply_to(message, 'Wrong Place_photo!')
 
 
 @bot.message_handler(commands=['list'])
 def place_list(message):
     try:
         user_id = message.from_user.id
-        print('----------------------------------------------------')
-        query = ("SELECT name, lon, lat FROM place "                 
+        query = ("SELECT name, lon, lat, photo FROM place "                 
          "WHERE user_id LIKE %s "
          "ORDER BY place_id DESC LIMIT 10")
         value = (user_id,)
         mycursor.execute(query, value)
 
-        print(mycursor.rowcount, "record inserted.")
         results = mycursor.fetchall()
   
-
-        print(mycursor.column_names)
-        print("Result: ", results)
-
-
         if results == []:   
             bot.send_message(message.chat.id, 'Place_List is empty!')
         else:
-            for (name, lon, lat) in results:
-                print(name, lon, lat)
-                bot.send_message(message.chat.id, '{}'.format(name))
+            bot.send_message(message.chat.id, 'Your Place_List:')
+            counter = 1
+            for (name, lon, lat, photo_res) in results:
+
+                photo_b = photo_res.encode('utf-8')
+                photo = base64.b64decode(photo_b)
+                bot.send_message(message.chat.id, '{}. {}'.format(counter, name))
+                bot.send_photo(message.chat.id, photo)
+
+                coordinates = '{},{}'.format(lon, lat)
+                bot.send_message(message.chat.id, '{}: {}'.format('Adress', get_adress_by_coordinates(coordinates)))
+                
                 bot.send_location(message.chat.id, lat, lon)
+                counter += 1
 
             bot.send_message(message.chat.id, 'Done!')
 
-        #query = ("SELECT photo FROM place "                 
-        # "WHERE user_id LIKE %s "
-        # "ORDER BY place_id DESC")
-        #value = (user_id,)
-        #mycursor.execute(query, value)
-
-        #results = base64.b64decode(mycursor.fetchone())
-        #bot.send_photo(message.chat.id, results[0],caption='Done!')
-        ###print(type(results[0]))
     except Exception as e:
-        bot.reply_to(message, 'Error')
+        bot.reply_to(message, 'Error in Place_List')
 
 
-@bot.message_handler(commands=['del'])
+@bot.message_handler(commands=['reset'])
 def delete_placelist(message):
     try:
         user_id = message.from_user.id
@@ -170,10 +178,9 @@ def delete_placelist(message):
         mycursor.execute(query, value)
         mydb.commit()
 
-        print("Deleted!")
         bot.send_message(message.chat.id, 'Your Place_List has been deleted!')
     except Exception as e:
-        bot.reply_to(message, 'Wrong del!')
+        bot.reply_to(message, 'Error in deleting!')
 
 
 @bot.message_handler()
