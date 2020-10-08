@@ -36,7 +36,7 @@ def get_adress_by_coordinates(coordinates):
 
 try:
   mydb = mysql.connector.connect(
-      host="eu-cdbr-west-03.cleardb.net",
+      host="eu-cdbr-west-03.cleardb.net",  
       user="bf74cdeb495328",
       password="b1507432",
       port="3306",
@@ -99,7 +99,7 @@ def process_placename_step(message):
         template = "An exception of type {} occured. Arguments:\n{!r}"
         mes = template.format(type(e).__name__, e.args)
         print(mes)
-        bot.reply_to(message, 'Error in the name')
+        bot.reply_to(message, type(e).__name__)
         
 
 
@@ -118,7 +118,7 @@ def process_location_step(message):
         template = "An exception of type {} occured. Arguments:\n{!r}"
         mes = template.format(type(e).__name__, e.args)
         print(mes)
-        bot.reply_to(message, 'Error in location')
+        bot.reply_to(message, type(e).__name__)
 
 
 def process_placephoto_step(message):
@@ -143,7 +143,7 @@ def process_placephoto_step(message):
         template = "An exception of type {} occured. Arguments:\n{!r}"
         mes = template.format(type(e).__name__, e.args)
         print(mes)
-        bot.reply_to(message, 'Wrong Place_photo!')
+        bot.reply_to(message, type(e).__name__)
 
 
 @bot.message_handler(commands=['list'])
@@ -182,7 +182,7 @@ def place_list(message):
         template = "An exception of type {} occured. Arguments:\n{!r}"
         mes = template.format(type(e).__name__, e.args)
         print(mes)
-        bot.reply_to(message, 'Error in Place_List')
+        bot.reply_to(message, type(e).__name__)
 
 
 @bot.message_handler(commands=['reset'])
@@ -201,7 +201,7 @@ def delete_placelist(message):
         template = "An exception of type {} occured. Arguments:\n{!r}"
         mes = template.format(type(e).__name__, e.args)
         print(mes)
-        bot.reply_to(message, 'Error in deleting!')
+        bot.reply_to(message, type(e).__name__)
 
 
 @bot.message_handler()
@@ -235,7 +235,7 @@ bot.load_next_step_handlers()                                                   
 if __name__ == '__main__':
     while True:
         try:
-            bot.polling(none_stop=True)
+            bot.polling(none_stop=True,timeout=60)
         except Exception as e:
             print(e)            # или просто print(e) если у вас логгера нет,
                              # или import traceback; traceback.print_exc() для печати полной инфы
