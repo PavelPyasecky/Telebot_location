@@ -10,7 +10,7 @@ from mysql.connector import errorcode
 from telebot import apihelper
 
 apihelper.proxy = {
-    'https':'https://45.133.182.18:18080'
+    'https':'https://83.97.23.90:18080'
 }
 
 
@@ -235,7 +235,7 @@ bot.load_next_step_handlers()                                                   
 if __name__ == '__main__':
     while True:
         try:
-            bot.polling(none_stop=True,timeout=60)
+            bot.polling(none_stop=True,timeout=120)
         except Exception as e:
             print(e)            # или просто print(e) если у вас логгера нет,
                              # или import traceback; traceback.print_exc() для печати полной инфы
