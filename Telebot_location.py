@@ -9,9 +9,9 @@ from PIL import Image
 from mysql.connector import errorcode
 from telebot import apihelper
 
-apihelper.proxy = {
-    'https':'https://83.97.23.90:18080'
-}
+#apihelper.proxy = {
+#    'https':'https://93.171.164.251:8080'
+#}
 
 
 
@@ -51,10 +51,16 @@ except mysql.connector.Error as err:
     else:
         print(err)
 
+except Exception as e:
+        template = "An exception of type {} occured. Arguments:\n{!r}"
+        mes = template.format(type(e).__name__, e.args)
+        print(mes)
+
+
 mycursor = mydb.cursor()
 
 token = '1181480337:AAHZBCS4pt2tvAYDt_L1xxQAqssVfAjUnLQ'
-bot = telebot.TeleBot(token)
+bot = telebot.TeleBot(token, threaded=False)
 
 data_place = {}
 
