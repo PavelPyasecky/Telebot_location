@@ -2,13 +2,18 @@ import base64
 import requests
 import mysql.connector
 import telebot
+import time
 import json
 
 from PIL import Image
 from mysql.connector import errorcode
+from telebot import apihelper
+
+apihelper.proxy = {
+    'https':'https://45.133.182.18:18080'
+}
 
 
-url = 'https://geocode-maps.yandex.ru/1.x/'
 
 def get_adress_by_coordinates(coordinates):
     params = {
@@ -19,7 +24,7 @@ def get_adress_by_coordinates(coordinates):
     "geocode": coordinates
     }
     try:
-
+        url = 'https://geocode-maps.yandex.ru/1.x/'
         response = requests.get(url, params=params)
 
         json_data = response.json()
@@ -60,8 +65,7 @@ class Place:
         self.lon = None
         self.lat = None
         self.photo = None
-
-commands = ['/add', '/list', '/reset']
+ 
 
 @bot.message_handler(commands=['add'])
 def add_location(message):
@@ -92,7 +96,11 @@ def process_placename_step(message):
         
         bot.register_next_step_handler(msg, process_location_step)
     except Exception as e:
+        template = "An exception of type {} occured. Arguments:\n{!r}"
+        mes = template.format(type(e).__name__, e.args)
+        print(mes)
         bot.reply_to(message, 'Error in the name')
+        
 
 
 def process_location_step(message):
@@ -107,6 +115,9 @@ def process_location_step(message):
         bot.register_next_step_handler(msg, process_placephoto_step)
 
     except Exception as e:
+        template = "An exception of type {} occured. Arguments:\n{!r}"
+        mes = template.format(type(e).__name__, e.args)
+        print(mes)
         bot.reply_to(message, 'Error in location')
 
 
@@ -129,6 +140,9 @@ def process_placephoto_step(message):
         bot.send_message(message.chat.id, 'Place has been saved!')
         data_place.pop(user_id)
     except Exception as e:
+        template = "An exception of type {} occured. Arguments:\n{!r}"
+        mes = template.format(type(e).__name__, e.args)
+        print(mes)
         bot.reply_to(message, 'Wrong Place_photo!')
 
 
@@ -165,6 +179,9 @@ def place_list(message):
             bot.send_message(message.chat.id, 'Done!')
 
     except Exception as e:
+        template = "An exception of type {} occured. Arguments:\n{!r}"
+        mes = template.format(type(e).__name__, e.args)
+        print(mes)
         bot.reply_to(message, 'Error in Place_List')
 
 
@@ -181,6 +198,9 @@ def delete_placelist(message):
 
         bot.send_message(message.chat.id, 'Your Place_List has been deleted!')
     except Exception as e:
+        template = "An exception of type {} occured. Arguments:\n{!r}"
+        mes = template.format(type(e).__name__, e.args)
+        print(mes)
         bot.reply_to(message, 'Error in deleting!')
 
 
@@ -206,11 +226,17 @@ def handler_message(message):
 # Enable saving next step handlers to file "./.handlers-saves/step.save".
 # Delay=2 means that after any change in next step handlers (e.g. calling register_next_step_handler())
 # saving will hapen after delay 2 seconds.
-#bot.enable_save_next_step_handlers(delay=2)                                                                #Need to uncomment
+bot.enable_save_next_step_handlers(delay=2)                                                                #Need to uncomment
 
 # Load next_step_handlers from save file (default "./.handlers-saves/step.save")
 # WARNING It will work only if enable_save_next_step_handlers was called!
-#bot.load_next_step_handlers()                                                                     #Need to uncomment
+bot.load_next_step_handlers()                                                                     #Need to uncomment
 
 if __name__ == '__main__':
-    bot.polling(none_stop= True)
+    while True:
+        try:
+            bot.polling(none_stop=True)
+        except Exception as e:
+            print(e)            # или просто print(e) если у вас логгера нет,
+                             # или import traceback; traceback.print_exc() для печати полной инфы
+            time.sleep(15)                                                             #bot.polling(none_stop= True, timeout=30)
