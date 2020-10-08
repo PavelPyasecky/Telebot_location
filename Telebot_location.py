@@ -213,6 +213,10 @@ def delete_placelist(message):
 @bot.message_handler()
 def handler_message(message):
   print(message.text)
+  query = ("select @@interactive_timeout, @@wait_timeout")  
+  mycursor.execute(query)
+  results = mycursor.fetchall()
+  print(results[0])
   bot.send_message(message.chat.id, text='This BestBot will help you with your Place_List.')
    
 ##@bot.message_handler()
