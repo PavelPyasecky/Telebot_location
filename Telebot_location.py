@@ -14,10 +14,9 @@ from telebot import apihelper
 #}
 
 
-
 def get_adress_by_coordinates(coordinates):
     params = {
-    "apikey":"6c96be79-497b-42ff-b64e-4af057ffac67",
+    "apikey":"3c61ad42-824b-4794-8f11-1712383b171b",
     "format":"json",
     "lang":"ru_RU",
     "kind":"house",
@@ -29,18 +28,24 @@ def get_adress_by_coordinates(coordinates):
 
         json_data = response.json()
         address_str = json_data["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]["metaDataProperty"]["GeocoderMetaData"]["AddressDetails"]["Country"]["AddressLine"]
-    except:
-        return "Too far"
-    return address_str
+        return address_str
+
+    except Exception as e:
+        print("Some troubles with YandexAPI.")
+        template = "An exception of type {} occured. Arguments:\n{!r}"
+        mes = template.format(type(e).__name__, e.args)
+        print(mes)
+        return ""
+    
 
 
 try:
   mydb = mysql.connector.connect(
-      host="eu-cdbr-west-03.cleardb.net",  
-      user="bf74cdeb495328",
-      password="b1507432",
-      port="3306",
-      database="heroku_bf58d8bda48c78b"
+      host="ryfqldzbliwmq6g5.chr7pe7iynqr.eu-west-1.rds.amazonaws.com",             #host="eu-cdbr-west-03.cleardb.net",
+      user="c0j6qn7mz98uslcm",                                                      #user="bf74cdeb495328",
+      password="mnodu6s5szx02ox3",                                                  #password="b1507432",
+      port="3306",                                                                  #port="3306",
+      database="djd3mtgqtb6lfuh0"                                                   #database="heroku_bf58d8bda48c78b"
       )
 
 except mysql.connector.Error as err:
@@ -177,7 +182,8 @@ def place_list(message):
                 bot.send_photo(message.chat.id, photo)
 
                 coordinates = '{},{}'.format(lon, lat)
-                bot.send_message(message.chat.id, '{}: {}'.format('Adress', get_adress_by_coordinates(coordinates)))
+                if get_adress_by_coordinates(coordinates):
+                    bot.send_message(message.chat.id, '{}: {}'.format('Adress', get_adress_by_coordinates(coordinates)))
                 
                 bot.send_location(message.chat.id, lat, lon)
                 counter += 1
@@ -213,10 +219,6 @@ def delete_placelist(message):
 @bot.message_handler()
 def handler_message(message):
   print(message.text)
-  query = ("select @@interactive_timeout, @@wait_timeout")  
-  mycursor.execute(query)
-  results = mycursor.fetchall()
-  print(results[0])
   bot.send_message(message.chat.id, text='This BestBot will help you with your Place_List.')
    
 ##@bot.message_handler()
@@ -245,8 +247,10 @@ bot.load_next_step_handlers()                                                   
 if __name__ == '__main__':
     while True:
         try:
-            bot.polling(none_stop=True,timeout=120)
+            bot.polling(none_stop=True, timeout=30)
         except Exception as e:
-            print(e)            # или просто print(e) если у вас логгера нет,
+            template = "An exception of type {} occured. Arguments:\n{!r}"
+            mes = template.format(type(e).__name__, e.args)
+            print(mes)
                              # или import traceback; traceback.print_exc() для печати полной инфы
             time.sleep(15)                                                             #bot.polling(none_stop= True, timeout=30)
