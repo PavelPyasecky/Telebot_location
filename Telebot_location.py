@@ -1,3 +1,5 @@
+import os
+import config
 import base64
 import requests
 import mysql.connector
@@ -7,16 +9,18 @@ import json
 
 from PIL import Image
 from mysql.connector import errorcode
-from telebot import apihelper
 
-#apihelper.proxy = {
-#    'https':'https://93.171.164.251:8080'
-#}
+DB_HOST = os.environ.get('DB_HOST')
+DB_NAME = os.environ.get('DB_NAME')
+DB_USER = os.environ.get('DB_USER')
+DB_PASSWORD = os.environ.get('DB_PASSWORD')
+
+YandexAPI = os.environ.get('YandexAPI')
 
 
 def get_adress_by_coordinates(coordinates):
     params = {
-    "apikey":"3c61ad42-824b-4794-8f11-1712383b171b",
+    "apikey":YandexAPI,
     "format":"json",
     "lang":"ru_RU",
     "kind":"house",
@@ -38,14 +42,13 @@ def get_adress_by_coordinates(coordinates):
         return ""
     
 
-
 try:
   mydb = mysql.connector.connect(
-      host="ryfqldzbliwmq6g5.chr7pe7iynqr.eu-west-1.rds.amazonaws.com",             #host="eu-cdbr-west-03.cleardb.net",
-      user="c0j6qn7mz98uslcm",                                                      #user="bf74cdeb495328",
-      password="mnodu6s5szx02ox3",                                                  #password="b1507432",
-      port="3306",                                                                  #port="3306",
-      database="djd3mtgqtb6lfuh0"                                                   #database="heroku_bf58d8bda48c78b"
+      host=DB_HOST,            
+      user=DB_USER,                                                      
+      password=DB_PASSWORD,                                                  
+      port="3306",                                                                  
+      database=DB_NAME                                                   
       )
 
 except mysql.connector.Error as err:
@@ -221,28 +224,14 @@ def handler_message(message):
   print(message.text)
   bot.send_message(message.chat.id, text='This BestBot will help you with your Place_List.')
    
-##@bot.message_handler()
-##def handler_message(message):
-##  print(message.text)
-##  bot.send_message(message.chat.id, text='Ask about currency.')
-##
-##@bot.message_handler(content_types=['location'])  #if we got location, need to do '/add'
-##def handler_location(message):
-##  print(message.location)
-##  bank_adress, bank_lat, bank_long = bank_location(message.location)
-##  image = Image.open(r'D:/CVS/Data/TeleBot/nac_bank_logo.jpg')
-##  bot.send_photo(message.chat.id, image, caption = 'Нацбанк: {}'.format(bank_adress))                 
-##  bot.send_location(message.chat.id, bank_lat, bank_long)
-
-
 # Enable saving next step handlers to file "./.handlers-saves/step.save".
 # Delay=2 means that after any change in next step handlers (e.g. calling register_next_step_handler())
 # saving will hapen after delay 2 seconds.
-bot.enable_save_next_step_handlers(delay=2)                                                                #Need to uncomment
+bot.enable_save_next_step_handlers(delay=2)                                                               
 
 # Load next_step_handlers from save file (default "./.handlers-saves/step.save")
 # WARNING It will work only if enable_save_next_step_handlers was called!
-bot.load_next_step_handlers()                                                                     #Need to uncomment
+bot.load_next_step_handlers()                                                                    
 
 if __name__ == '__main__':
     while True:
@@ -252,5 +241,4 @@ if __name__ == '__main__':
             template = "An exception of type {} occured. Arguments:\n{!r}"
             mes = template.format(type(e).__name__, e.args)
             print(mes)
-                             # или import traceback; traceback.print_exc() для печати полной инфы
-            time.sleep(15)                                                             #bot.polling(none_stop= True, timeout=30)
+            time.sleep(15)                                                           

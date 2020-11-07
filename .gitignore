@@ -6,4 +6,5 @@ __pycache__/
 .vs
 .handler-saves
 read.me
+config.py
 Get_adress.py
