@@ -17,6 +17,8 @@ DB_PASSWORD = os.environ.get('DB_PASSWORD')
 
 YandexAPI = os.environ.get('YandexAPI')
 
+Telebot_token = os.environ.get('Telebot_token')
+
 
 def get_adress_by_coordinates(coordinates):
     params = {
@@ -67,7 +69,7 @@ except Exception as e:
 
 mycursor = mydb.cursor()
 
-token = '1181480337:AAHZBCS4pt2tvAYDt_L1xxQAqssVfAjUnLQ'
+token = Telebot_token
 bot = telebot.TeleBot(token, threaded=False)
 
 data_place = {}
